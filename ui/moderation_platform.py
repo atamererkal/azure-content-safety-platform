@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.text_moderator import TextModerator
 from src.image_moderator import ImageModerator
 from src.prompt_shield import PromptShield
+from src.explainability import ModerationExplainer
 
 import plotly.graph_objects as go
 import pandas as pd
@@ -92,11 +93,19 @@ st.markdown("""
         font-size: 2rem;
         font-weight: bold;
     }
+    
+    .explanation-section {
+        background-color: #1a1d24;
+        border-left: 4px solid #4A90E2;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-header">🛡️ Enterprise Content Moderation Platform</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">AI-Powered Content Safety • Real-time Analysis • Multi-Modal Detection</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">AI-Powered Content Safety • Real-time Analysis • Explainable Decisions</div>', unsafe_allow_html=True)
 
 # Initialize
 if 'text_moderator' not in st.session_state:
@@ -104,6 +113,7 @@ if 'text_moderator' not in st.session_state:
         st.session_state.text_moderator = TextModerator()
         st.session_state.image_moderator = ImageModerator()
         st.session_state.prompt_shield = PromptShield()
+        st.session_state.explainer = ModerationExplainer()
         st.session_state.history = []
     except Exception as e:
         st.error(f"❌ Initialization failed: {e}")
@@ -175,7 +185,9 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📖 Examples"
 ])
 
-# TAB 1: Text Analysis
+# ============================================================================
+# TAB 1: TEXT ANALYSIS
+# ============================================================================
 with tab1:
     st.subheader("Text Content Moderation")
     
@@ -202,6 +214,7 @@ with tab1:
                 decision = result["decision"]
                 max_sev = result["max_severity"]
                 
+                # Display decision box
                 if decision == "APPROVED":
                     st.markdown(f"""
                     <div class="safe-box">
@@ -283,11 +296,41 @@ with tab1:
                 )
                 
                 st.plotly_chart(fig, use_container_width=True)
+                
+                # ============ EXPLAINABILITY (XAI) ============
+                st.markdown("---")
+                st.subheader("🧠 Why This Decision?")
+                
+                explanation = st.session_state.explainer.explain_text_decision(result)
+                
+                # Decision summary
+                st.info(explanation["decision_summary"])
+                
+                # Key factors
+                if explanation["key_factors"]:
+                    st.markdown("**Key Factors:**")
+                    for factor in explanation["key_factors"]:
+                        st.markdown(factor)
+                
+                # Detailed reasoning
+                with st.expander("📖 Detailed Reasoning", expanded=False):
+                    st.markdown(explanation["detailed_reasoning"])
+                    st.markdown("---")
+                    st.markdown(explanation["confidence_explanation"])
+                
+                # Improvement suggestions
+                suggestions = st.session_state.explainer.get_improvement_suggestions(result, "text")
+                if suggestions:
+                    with st.expander("💡 Suggestions for Content Creator", expanded=False):
+                        for suggestion in suggestions:
+                            st.markdown(suggestion)
         
         else:
             st.warning("⚠️ Please enter text")
 
-# TAB 2: Image Analysis
+# ============================================================================
+# TAB 2: IMAGE ANALYSIS
+# ============================================================================
 with tab2:
     st.subheader("Image Content Moderation")
     
@@ -317,7 +360,7 @@ Fictional or stylized content typically scores low (0-2), which is **expected be
     
     st.markdown("---")
     
-    # Check availability first
+    # Check availability
     availability = st.session_state.image_moderator.check_availability()
     
     if not availability["available"]:
@@ -370,8 +413,38 @@ Fictional or stylized content typically scores low (0-2), which is **expected be
                     
                     if result['flagged_categories']:
                         st.write(f"**Flagged:** {', '.join(result['flagged_categories'])}")
+                    
+                    # ============ EXPLAINABILITY (XAI) ============
+                    st.markdown("---")
+                    st.subheader("🧠 Why This Decision?")
+                    
+                    explanation = st.session_state.explainer.explain_image_decision(result)
+                    
+                    # Decision summary
+                    st.info(explanation["decision_summary"])
+                    
+                    # Key factors
+                    if explanation["key_factors"]:
+                        st.markdown("**Detected Visual Elements:**")
+                        for factor in explanation["key_factors"]:
+                            st.markdown(factor)
+                    
+                    # Detailed analysis
+                    with st.expander("📖 Visual Analysis Details", expanded=True):
+                        st.markdown(explanation["visual_analysis"])
+                        st.markdown("---")
+                        st.markdown(explanation["detailed_reasoning"])
+                    
+                    # Improvement suggestions
+                    suggestions = st.session_state.explainer.get_improvement_suggestions(result, "image")
+                    if suggestions:
+                        with st.expander("💡 Recommendations", expanded=False):
+                            for suggestion in suggestions:
+                                st.markdown(suggestion)
 
-# TAB 3: Prompt Shield
+# ============================================================================
+# TAB 3: PROMPT SHIELD
+# ============================================================================
 with tab3:
     st.subheader("🛡️ Jailbreak Detection")
     
@@ -408,8 +481,28 @@ with tab3:
                         <p>No jailbreak patterns detected.</p>
                     </div>
                     """, unsafe_allow_html=True)
+                
+                # ============ EXPLAINABILITY (XAI) ============
+                st.markdown("---")
+                st.subheader("🧠 Security Analysis")
+                
+                explanation = st.session_state.explainer.explain_prompt_decision(result)
+                
+                # Key factors
+                if explanation["key_factors"]:
+                    st.markdown("**Attack Patterns Detected:**")
+                    for factor in explanation["key_factors"]:
+                        st.markdown(factor)
+                
+                # Security details
+                with st.expander("🔒 Security Details", expanded=True):
+                    st.markdown(explanation["security_analysis"])
+                    st.markdown("---")
+                    st.markdown(explanation["detailed_reasoning"])
 
-# TAB 4: Batch Processing
+# ============================================================================
+# TAB 4: BATCH PROCESSING
+# ============================================================================
 with tab4:
     st.subheader("📊 Batch Content Moderation")
     
@@ -475,18 +568,11 @@ with tab4:
             blocked = sum(1 for r in results if r.get("decision") == "BLOCKED")
             errors = sum(1 for r in results if r.get("decision") == "ERROR")
             
-            # Verify totals
-            total_decisions = approved + review + blocked + errors
-            
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("📊 Total", len(texts))
             col2.metric("✅ Approved", approved, f"{approved/len(texts)*100:.0f}%")
             col3.metric("⚠️ Review", review, f"{review/len(texts)*100:.0f}%")
             col4.metric("🚫 Blocked", blocked, f"{blocked/len(texts)*100:.0f}%")
-            
-            # Debug info
-            if total_decisions != len(texts):
-                st.warning(f"⚠️ Decision count mismatch: {total_decisions} vs {len(texts)}")
             
             # Detailed results
             st.markdown("---")
@@ -510,7 +596,9 @@ with tab4:
                         ])
                         st.dataframe(df, use_container_width=True)
 
-# TAB 5: Examples
+# ============================================================================
+# TAB 5: EXAMPLES
+# ============================================================================
 with tab5:
     st.subheader("📖 Test Examples")
     st.markdown("Click to load example below (ready to copy-paste):")
@@ -541,6 +629,7 @@ with tab5:
         
         st.info("👆 Copy the text above and paste into **Text Analysis** tab")
 
+# Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #888;'>
