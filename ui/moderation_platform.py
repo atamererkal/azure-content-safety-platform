@@ -19,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Professional CSS
+# Professional CSS with Mobile Responsive
 st.markdown("""
 <style>
     .stApp {
@@ -83,10 +83,10 @@ st.markdown("""
         border-left: 4px solid #4A90E2;
         padding: 1rem;
         border-radius: 8px;
-        margin: 0.5rem 0;
         font-family: 'Courier New', monospace;
         font-size: 0.95rem;
         color: #E8E8E8;
+        margin-bottom: 0.5rem;
     }
     
     [data-testid="stMetricValue"] {
@@ -94,12 +94,20 @@ st.markdown("""
         font-weight: bold;
     }
     
-    .explanation-section {
-        background-color: #1a1d24;
-        border-left: 4px solid #4A90E2;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 1rem 0;
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .main-header {
+            font-size: 2rem !important;
+        }
+        .sub-header {
+            font-size: 1rem !important;
+        }
+        [data-testid="stMetricValue"] {
+            font-size: 1.5rem !important;
+        }
+        .safe-box, .unsafe-box, .review-box {
+            padding: 1rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -306,22 +314,20 @@ with tab1:
                 # Decision summary
                 st.info(explanation["decision_summary"])
                 
-                # Key factors
+                # Key factors (specific violations)
                 if explanation["key_factors"]:
-                    st.markdown("**Key Factors:**")
+                    st.markdown("**Specific Issues Detected:**")
                     for factor in explanation["key_factors"]:
                         st.markdown(factor)
                 
                 # Detailed reasoning
-                with st.expander("📖 Detailed Reasoning", expanded=False):
+                with st.expander("📖 Detailed Analysis", expanded=False):
                     st.markdown(explanation["detailed_reasoning"])
-                    st.markdown("---")
-                    st.markdown(explanation["confidence_explanation"])
                 
                 # Improvement suggestions
                 suggestions = st.session_state.explainer.get_improvement_suggestions(result, "text")
                 if suggestions:
-                    with st.expander("💡 Suggestions for Content Creator", expanded=False):
+                    with st.expander("💡 How to Fix This", expanded=False):
                         for suggestion in suggestions:
                             st.markdown(suggestion)
         
@@ -423,16 +429,14 @@ Fictional or stylized content typically scores low (0-2), which is **expected be
                     # Decision summary
                     st.info(explanation["decision_summary"])
                     
-                    # Key factors
+                    # Key factors (specific visual violations)
                     if explanation["key_factors"]:
-                        st.markdown("**Detected Visual Elements:**")
+                        st.markdown("**What Was Detected:**")
                         for factor in explanation["key_factors"]:
                             st.markdown(factor)
                     
                     # Detailed analysis
                     with st.expander("📖 Visual Analysis Details", expanded=True):
-                        st.markdown(explanation["visual_analysis"])
-                        st.markdown("---")
                         st.markdown(explanation["detailed_reasoning"])
                     
                     # Improvement suggestions
@@ -488,16 +492,14 @@ with tab3:
                 
                 explanation = st.session_state.explainer.explain_prompt_decision(result)
                 
-                # Key factors
+                # Key factors (specific attack patterns)
                 if explanation["key_factors"]:
-                    st.markdown("**Attack Patterns Detected:**")
+                    st.markdown("**Attack Patterns Found:**")
                     for factor in explanation["key_factors"]:
                         st.markdown(factor)
                 
                 # Security details
-                with st.expander("🔒 Security Details", expanded=True):
-                    st.markdown(explanation["security_analysis"])
-                    st.markdown("---")
+                with st.expander("🔒 Technical Details", expanded=True):
                     st.markdown(explanation["detailed_reasoning"])
 
 # ============================================================================
@@ -597,11 +599,11 @@ with tab4:
                         st.dataframe(df, use_container_width=True)
 
 # ============================================================================
-# TAB 5: EXAMPLES
+# TAB 5: EXAMPLES (With Easy Copy)
 # ============================================================================
 with tab5:
     st.subheader("📖 Test Examples")
-    st.markdown("Click to load example below (ready to copy-paste):")
+    st.markdown("Click to load example, then copy the text:")
     
     examples = {
         "✅ Safe Content": "I love this product! Great quality and fast shipping. Highly recommend to everyone!",
@@ -617,17 +619,26 @@ with tab5:
             st.session_state['current_example'] = text
             st.session_state['current_example_title'] = title
     
-    # Display loaded example
+    # Display loaded example with copy functionality
     if 'current_example' in st.session_state:
         st.markdown("---")
         st.success(f"✅ Loaded: **{st.session_state['current_example_title']}**")
-        st.markdown(f"""
-        <div class="example-box">
-        {st.session_state['current_example']}
-        </div>
-        """, unsafe_allow_html=True)
         
-        st.info("👆 Copy the text above and paste into **Text Analysis** tab")
+        # Text area for easy copying
+        example_text = st.text_area(
+            "Example text (click inside, Ctrl+A to select all, Ctrl+C to copy):",
+            value=st.session_state['current_example'],
+            height=100,
+            key="example_copy_area"
+        )
+        
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.info("💡 **Windows:** Ctrl+A → Ctrl+C")
+        with col2:
+            st.info("💡 **Mac:** Cmd+A → Cmd+C")
+        
+        st.markdown("👉 **Next:** Paste into **Text Analysis** tab and click Analyze")
 
 # Footer
 st.markdown("---")
