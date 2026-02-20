@@ -13,13 +13,13 @@
 ## 🎨 Visual Preview
 
 <p align="center">
-  <img src="docs/screenshots/text_analysis.png" alt="Text Analysis with XAI" width="800">
+  <img src="docs/screenshots/text_analysis.png" alt="Text Analysis" width="800">
   <br>
   <em>Text Analysis with Explainable AI — See exactly why content was flagged</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/image_analysis.png" alt="Image Analysis" width="800">
+  <img src="docs/screenshots/image_moderation.png" alt="Image Analysis with XAI" width="800">
   <br>
   <em>Image Moderation with specific visual violation details</em>
 </p>
