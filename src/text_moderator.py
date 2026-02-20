@@ -17,9 +17,13 @@ class TextModerator:
         
         self.client = ContentSafetyClient(endpoint, AzureKeyCredential(key))
     
-    def analyze_text(self, text: str, include_details: bool = True) -> dict:
+    def analyze_text(self, text: str, severity_threshold: int = 3) -> dict:
         """
         Comprehensive text analysis
+        
+        Args:
+            text: Text to analyze
+            severity_threshold: Block if ANY category >= this value (default: 3)
         
         Returns:
             Full analysis with categories, severity, decision
@@ -37,7 +41,7 @@ class TextModerator:
                 "max_severity": 0,
                 "flagged_categories": [],
                 "decision": "APPROVED",
-                "confidence": 1.0
+                "threshold_used": severity_threshold
             }
             
             # Process categories
@@ -49,24 +53,26 @@ class TextModerator:
                     "severity": severity,
                     "detected": severity > 0,
                     "risk_level": self._get_risk_level(severity),
-                    "action": self._get_action(severity)
+                    "action": self._get_action(severity, severity_threshold)
                 }
                 
+                # Track max severity
                 if severity > results["max_severity"]:
                     results["max_severity"] = severity
                 
-                # Threshold: >2 = unsafe
-                if severity > 2:
+                # Check against threshold
+                if severity >= severity_threshold:
                     results["overall_safe"] = False
                     results["flagged_categories"].append(category_name)
-                
-                # Decision logic
-                if severity >= 5:
+            
+            # Final decision based on threshold
+            if results["max_severity"] >= severity_threshold:
+                if results["max_severity"] >= 5:
                     results["decision"] = "BLOCKED"
-                    results["confidence"] = 0.95
-                elif severity >= 3:
+                else:
                     results["decision"] = "REVIEW"
-                    results["confidence"] = 0.75
+            else:
+                results["decision"] = "APPROVED"
             
             return results
         
@@ -87,17 +93,17 @@ class TextModerator:
         else:
             return "High"
     
-    def _get_action(self, severity: int) -> str:
+    def _get_action(self, severity: int, threshold: int) -> str:
         if severity == 0:
             return "✅ Approve"
-        elif severity <= 2:
-            return "⚠️ Allow with warning"
-        elif severity <= 4:
-            return "👁️ Manual review required"
+        elif severity < threshold:
+            return "✅ Approve with logging"
+        elif severity < 5:
+            return "⚠️ Manual review required"
         else:
             return "🚫 Block immediately"
     
-    def batch_analyze(self, texts: list, save_to_file: str = None) -> dict:
+    def batch_analyze(self, texts: list, severity_threshold: int = 3, save_to_file: str = None) -> dict:
         """Batch analysis with statistics"""
         results = {
             "total": len(texts),
@@ -105,11 +111,12 @@ class TextModerator:
             "review": 0,
             "blocked": 0,
             "errors": 0,
-            "analyses": []
+            "analyses": [],
+            "threshold_used": severity_threshold
         }
         
         for text in texts:
-            analysis = self.analyze_text(text)
+            analysis = self.analyze_text(text, severity_threshold)
             results["analyses"].append(analysis)
             
             decision = analysis.get("decision", "ERROR")
