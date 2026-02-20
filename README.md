@@ -10,6 +10,21 @@
 [![XAI](https://img.shields.io/badge/XAI-Explainable%20AI-blueviolet)](https://github.com/AtamerErkal/content-safety-platform)
 
 ---
+## 🎨 Visual Preview
+
+<p align="center">
+  <img src="docs/screenshots/text_analysis.png" alt="Text Analysis with XAI" width="800">
+  <br>
+  <em>Text Analysis with Explainable AI — See exactly why content was flagged</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/image_analysis.png" alt="Image Analysis" width="800">
+  <br>
+  <em>Image Moderation with specific visual violation details</em>
+</p>
+
+---
 
 ## 🎯 Overview
 
