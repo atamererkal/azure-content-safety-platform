@@ -591,8 +591,7 @@ This software is free for both commercial and non-commercial use. Attribution ap
 
 **Atamer Erkal**
 
-🌍 **Location:** Ulm, Germany  
-💼 **Specialization:** Azure AI Solutions, MLOps, Content Safety, XAI  
+💼 **Specialization:** Azure AI Solutions, MLOps, Healthcare AI and Defence AI
 🎓 **Focus:** Explainable AI, Content Moderation, NLP, Computer Vision
 
 **Connect:**
