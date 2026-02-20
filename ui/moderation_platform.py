@@ -402,6 +402,43 @@ Detects attempts to manipulate AI systems through:
 with tab4:
     st.subheader("📊 Batch Content Moderation")
     
+    # Sample dataset selector
+    st.markdown("### 📁 Load Sample Dataset")
+    
+    sample_datasets = {
+        "🗨️ Social Media Comments": "data/sample_batches/social_media_comments.txt",
+        "🎮 Gaming Chat Logs": "data/sample_batches/gaming_chat_logs.txt",
+        "⭐ Customer Reviews": "data/sample_batches/customer_reviews.txt",
+        "💬 Forum Posts": "data/sample_batches/forum_posts.txt",
+        "📋 Moderation Queue": "data/sample_batches/content_moderation_queue.txt"
+    }
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        selected_sample = st.selectbox(
+            "Choose a sample dataset:",
+            options=list(sample_datasets.keys()),
+            key="sample_selector"
+        )
+    
+    with col2:
+        if st.button("📥 Load Sample", key="load_sample_btn"):
+            try:
+                sample_path = sample_datasets[selected_sample]
+                if os.path.exists(sample_path):
+                    with open(sample_path, 'r', encoding='utf-8') as f:
+                        sample_content = f.read()
+                    st.session_state['batch_input_data'] = sample_content
+                    st.success(f"✅ Loaded: {selected_sample}")
+                    st.rerun()
+                else:
+                    st.error(f"❌ File not found: {sample_path}")
+            except Exception as e:
+                st.error(f"❌ Error loading sample: {e}")
+    
+    st.markdown("---")
+    
     batch_input = st.text_area(
         "Enter texts (one per line):",
         height=250,

@@ -19,7 +19,10 @@ __pycache__/
 # Data
 data/history/
 data/reports/
-*.log
+data/*.log
+
+# But include sample_batches
+!data/sample_batches/
 
 # OS
 .DS_Store
