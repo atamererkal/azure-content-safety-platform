@@ -291,6 +291,32 @@ with tab1:
 with tab2:
     st.subheader("Image Content Moderation")
     
+    # Important info about detection
+    with st.expander("⚠️ Important: What This Detects", expanded=False):
+        st.warning("""
+**Azure Content Safety is optimized for real-world harmful content.**
+
+**Reliably Detects (Severity 5-7):**
+- 🩸 Graphic violence (real injuries, blood, active weapon use)
+- 🔞 Explicit sexual content (nudity, pornography)
+- ☠️ Hate symbols (swastika, extremist imagery)
+- 🩹 Self-harm (cutting, suicide methods)
+
+**Limited Detection (Severity 0-2):**
+- 🎮 Video game violence
+- 🎬 Movie/TV screenshots
+- 🎨 Cartoon/animated content
+- 📰 News photography
+- 🏥 Medical/educational imagery
+
+**Why?** The AI is trained on real-world harmful content to minimize false positives. 
+Fictional or stylized content typically scores low (0-2), which is **expected behavior**.
+
+**For Best Results:** Combine image + text analysis in production.
+        """)
+    
+    st.markdown("---")
+    
     # Check availability first
     availability = st.session_state.image_moderator.check_availability()
     
