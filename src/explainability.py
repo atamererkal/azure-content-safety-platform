@@ -37,13 +37,15 @@ class ModerationExplainer:
                 return f"Contains {', '.join(patterns)} (severity {severity}/7)"
             return f"Violent content patterns detected with severity {severity}/7"
         
-        elif category == "self harm":
+        elif category in ("self harm", "selfharm"):
             patterns = []
             if any(word in text_lower for word in ["suicide", "end it all", "kill myself"]):
                 patterns.append("suicidal ideation")
-            if any(word in text_lower for word in ["cut", "noose", "overdose"]):
+            if any(word in text_lower for word in ["cut", "noose", "overdose", "slit", "step by step"]):
                 patterns.append("self-harm methods")
-            
+            if any(word in text_lower for word in ["no way out", "want to die", "want it to stop", "notice i was gone"]):
+                patterns.append("hopelessness language")
+
             if patterns:
                 return f"Contains {', '.join(patterns)} (severity {severity}/7)"
             return f"Self-harm content detected with severity {severity}/7"
@@ -65,7 +67,7 @@ class ModerationExplainer:
             else:
                 return "Image has mild violent elements: action scenes or fictional combat"
         
-        elif category == "selfharm" or category == "self harm":
+        elif category in ("selfharm", "self harm"):
             if severity >= 6:
                 return "Image shows self-harm evidence: cutting marks, suicide methods, or injury tools"
             elif severity >= 4:
@@ -131,27 +133,59 @@ class ModerationExplainer:
                     explanation["key_factors"].append(f"⚠️ **{cat_name.title()}:** {specific}")
                     explanation["specific_violations"].append(specific)
         
+        # Trigger keywords for detailed section
+        trigger_list = ModerationExplainer.get_trigger_keywords(text, categories)
+        trigger_summary = ""
+        if trigger_list:
+            keyword_lines = []
+            for t in trigger_list:
+                keyword_lines.append(
+                    f'- **"{t["word"]}"** → _{t["category"].title()}_ signal '
+                    f'(severity {t["severity"]}/7)'
+                )
+            trigger_summary = "\n\n**Detected trigger words/phrases:**\n" + "\n".join(keyword_lines)
+
+        # Category breakdown table
+        cat_lines = []
+        for cat, data in categories.items():
+            sev = data["severity"]
+            risk = data["risk_level"]
+            bar = "█" * sev + "░" * (7 - sev)
+            cat_lines.append(f"- **{cat.title()}**: {bar} {sev}/7 ({risk})")
+        cat_breakdown = "\n\n**Category breakdown:**\n" + "\n".join(cat_lines)
+
         # Detailed reasoning
         if decision == "BLOCKED":
             violation_details = " | ".join(explanation["specific_violations"])
             explanation["detailed_reasoning"] = (
                 f"**Why was this blocked?**\n\n"
-                f"The AI detected: {violation_details}.\n\n"
-                f"This content violates platform policies due to explicit harmful language or threats. "
-                f"Maximum severity score ({max_severity}/7) exceeds the critical threshold (5/7)."
+                f"The AI detected: {violation_details}."
+                f"{trigger_summary}"
+                f"{cat_breakdown}\n\n"
+                f"Maximum severity ({max_severity}/7) exceeds the critical auto-block threshold (5/7). "
+                f"This content is automatically rejected without requiring manual review. "
+                f"The combination of detected signals indicates a high-confidence policy violation."
             )
         elif decision == "REVIEW":
             violation_details = " | ".join(explanation["specific_violations"])
             explanation["detailed_reasoning"] = (
                 f"**Why does this need review?**\n\n"
-                f"The AI detected: {violation_details}.\n\n"
-                f"While not immediately severe, this content requires human judgment to assess context and intent."
+                f"The AI detected: {violation_details}."
+                f"{trigger_summary}"
+                f"{cat_breakdown}\n\n"
+                f"Severity ({max_severity}/7) falls in the ambiguous range (threshold {threshold}–4). "
+                f"This score indicates potentially harmful content, but context matters — "
+                f"satire, news reporting, or academic discussion may use similar language legitimately. "
+                f"A human moderator should evaluate intent before making a final decision."
             )
         else:
             explanation["detailed_reasoning"] = (
-                "**Why was this approved?**\n\n"
-                "The AI analyzed this content and found no significant policy violations. "
-                "All categories scored below the threshold, indicating safe content."
+                f"**Why was this approved?**\n\n"
+                f"The AI analyzed this content across all four harm categories and found no significant "
+                f"policy violations. All category scores fall below the configured threshold ({threshold}/7)."
+                f"{cat_breakdown}\n\n"
+                f"Content is cleared for publication. Note: approval reflects absence of detected harm signals "
+                f"— context-specific moderation rules may still apply."
             )
         
         return explanation
@@ -261,6 +295,59 @@ class ModerationExplainer:
         return explanation
     
     @staticmethod
+    def get_trigger_keywords(text: str, categories: dict) -> list:
+        """
+        Return list of dicts {word, category, severity} for words that triggered the decision.
+        Only returns triggers for categories with severity > 0.
+        """
+        text_lower = text.lower()
+
+        keyword_map = {
+            "hate": [
+                "hate", "stupid", "idiot", "trash", "garbage", "deport",
+                "inferior", "filthy", "disgusting", "vermin", "subhuman",
+                "people from", "those people",
+            ],
+            "violence": [
+                "kill", "murder", "hurt", "attack", "harm", "beat", "destroy",
+                "weapon", "gun", "knife", "bomb", "shoot", "stab", "strangle",
+                "find you", "watch your back", "you'll pay", "come for you",
+                "badly", "threat",
+            ],
+            "selfharm": [
+                "suicide", "end it all", "kill myself", "want to die",
+                "cut", "noose", "overdose", "self-harm", "slit wrists",
+                "step by step", "no way out", "notice i was gone",
+                "want it to stop", "tie a noose",
+            ],
+            "sexual": [
+                "explicit", "nude", "naked", "sexual", "porn", "erotic",
+                "inappropriate",
+            ],
+        }
+
+        triggers = []
+        seen_words = set()
+
+        for category, patterns in keyword_map.items():
+            cat_data = categories.get(category, {})
+            severity = cat_data.get("severity", 0)
+            if severity == 0:
+                continue
+            for pattern in patterns:
+                if pattern in text_lower and pattern not in seen_words:
+                    idx = text_lower.find(pattern)
+                    actual_word = text[idx: idx + len(pattern)]
+                    triggers.append({
+                        "word": actual_word,
+                        "category": category,
+                        "severity": severity,
+                    })
+                    seen_words.add(pattern)
+
+        return triggers
+
+    @staticmethod
     def get_improvement_suggestions(result: dict, content_type: str) -> list:
         """Provide specific, actionable suggestions"""
         
@@ -292,7 +379,7 @@ class ModerationExplainer:
                             suggestions.append(
                                 "💡 **Reduce violence:** Remove aggressive language or weapon references"
                             )
-                    elif cat_name == "self harm":
+                    elif cat_name in ("self harm", "selfharm"):
                         suggestions.append(
                             "💡 **Remove self-harm content:** Delete suicidal ideation or self-injury methods. "
                             "If discussing mental health, add crisis resources."

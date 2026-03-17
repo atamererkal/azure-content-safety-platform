@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import sys; sys.path.insert\\(0, ''.''\\); from src.explainability import ModerationExplainer; print\\(''explainability OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''ui/moderation_platform.py''\\).read\\(\\)\\); print\\(''syntax OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''ui/moderation_platform.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''syntax OK''\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(timeout 15 python -m streamlit run ui/moderation_platform.py --server.headless true --server.port 8502)",
+      "Bash(python data/test_images/download_test_images.py)"
+    ]
+  }
+}
