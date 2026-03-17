@@ -13,13 +13,13 @@
 ## 🎨 Visual Preview
 
 <p align="center">
-  <img src="docs/screenshots/text_analysis.png" alt="Text Analysis with XAI" width="800">
+  <img src="docs/screenshots/text_analysis.png" alt="Text Analysis" width="800">
   <br>
   <em>Text Analysis with Explainable AI — See exactly why content was flagged</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/image_analysis.png" alt="Image Analysis" width="800">
+  <img src="docs/screenshots/image_moderation.png" alt="Image Analysis with XAI" width="800">
   <br>
   <em>Image Moderation with specific visual violation details</em>
 </p>
@@ -591,8 +591,7 @@ This software is free for both commercial and non-commercial use. Attribution ap
 
 **Atamer Erkal**
 
-🌍 **Location:** Ulm, Germany  
-💼 **Specialization:** Azure AI Solutions, MLOps, Content Safety, XAI  
+💼 **Specialization:** Azure AI Solutions, MLOps, Healthcare AI and Defence AI
 🎓 **Focus:** Explainable AI, Content Moderation, NLP, Computer Vision
 
 **Connect:**
